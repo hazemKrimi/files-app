@@ -1,1 +1,3 @@
-# files-app-server
+# Files App
+
+A file management app (view, upload, download)
