@@ -1,11 +1,31 @@
 import { sign } from 'jsonwebtoken';
 import { genSalt, hash, compare } from 'bcrypt';
-import { Resolver, Mutation, Args, Query } from 'type-graphql';
+import { Resolver, Mutation, Args, Query, Ctx, Authorized } from 'type-graphql';
 import { User, UserModel } from '../models/User';
-import { UserData, SignupArgs, LoginArgs } from '../types';
+import { UserData, SignupArgs, LoginArgs } from '../types/user';
+import { AuthContext } from '../types/auth';
 
 @Resolver()
 export class UserResolver {
+	@Query(() => [User], { nullable: true })
+	async getUsers(): Promise<User[]> {
+		try {
+			return await UserModel.find();
+		} catch (err) {
+			throw err.message;
+		}
+	}
+
+	@Authorized()
+	@Query(() => User, { nullable: true })
+	async me(@Ctx() { user }: AuthContext): Promise<User> {
+		try {
+			return (await UserModel.findOne({ _id: user.id })) as User;
+		} catch (err) {
+			throw err.message;
+		}
+	}
+
 	@Mutation(() => UserData)
 	async signup(@Args() { username, email, password }: SignupArgs): Promise<UserData> {
 		try {
@@ -17,15 +37,6 @@ export class UserResolver {
 			const token = sign({ id: user.id }, 'SECRET');
 			await user.save();
 			return { user, token };
-		} catch (err) {
-			throw err.message;
-		}
-	}
-
-	@Query(() => [User])
-	async getUsers(): Promise<User[]> {
-		try {
-			return await UserModel.find();
 		} catch (err) {
 			throw err.message;
 		}

@@ -1,6 +1,6 @@
 import { Field, ObjectType, ArgsType } from 'type-graphql';
 import { IsEmail, MinLength } from 'class-validator';
-import { User } from './models/User';
+import { User } from '../models/User';
 
 @ArgsType()
 export class SignupArgs {
