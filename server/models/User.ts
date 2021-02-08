@@ -1,7 +1,8 @@
-import { prop, getModelForClass } from '@typegoose/typegoose';
+import { prop, getModelForClass, modelOptions, Severity } from '@typegoose/typegoose';
 import { ObjectType, Field, ID } from 'type-graphql';
 import { File } from './File';
 
+@modelOptions({ options: { allowMixed: Severity.ALLOW } })
 @ObjectType({ description: 'User Model' })
 export class User {
 	@Field(() => ID)
@@ -19,7 +20,7 @@ export class User {
 	public password?: string;
 
 	@Field(() => [File])
-	@prop({ ref: File, required: false })
+	@prop({ required: false })
 	public files?: File[];
 }
 
