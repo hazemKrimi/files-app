@@ -27,6 +27,20 @@ export class LoginArgs {
 	public password?: string;
 }
 
+@ArgsType()
+export class UpdateAccountArgs {
+	@Field({ nullable: true })
+	public username?: string;
+
+	@Field({ nullable: true })
+	@IsEmail()
+	public email?: string;
+
+	@Field({ nullable: true })
+	@MinLength(6)
+	public password?: string;
+}
+
 @ObjectType({ description: 'Signup response data' })
 export class UserData {
 	@Field()

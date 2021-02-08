@@ -3,7 +3,7 @@ import { genSalt, hash, compare } from 'bcrypt';
 import { Resolver, Mutation, Args, Query, Ctx, Authorized } from 'type-graphql';
 import { User, UserModel } from '../models/User';
 import { File, FileModel } from '../models/File';
-import { UserData, SignupArgs, LoginArgs } from '../types/user';
+import { UserData, SignupArgs, LoginArgs, UpdateAccountArgs } from '../types/user';
 import { AuthContext } from '../types/auth';
 import { unlinkSync } from 'fs';
 import { normalize } from 'path';
@@ -60,10 +60,34 @@ export class UserResolver {
 	}
 
 	@Authorized()
+	@Mutation(() => User, { nullable: true })
+	async updateAccount(
+		@Ctx() { user: { id } }: AuthContext,
+		@Args() { username, email, password }: UpdateAccountArgs
+	): Promise<User> {
+		try {
+			const user = await UserModel.findOne({ _id: id });
+			if (!user) throw new Error('User does not exist');
+			if (username) user.username = username;
+			if (email) user.email = email;
+			if (password) {
+				const salt = await genSalt(10);
+				const passwordHash = await hash(password, salt);
+				user.password = passwordHash;
+			}
+			await user.save();
+			return user as User;
+		} catch (err) {
+			throw err.message;
+		}
+	}
+
+	@Authorized()
 	@Query(() => User, { nullable: true })
 	async deleteAccount(@Ctx() { user: { id } }: AuthContext): Promise<User> {
 		try {
 			const user = (await UserModel.findOne({ _id: id })) as User;
+			if (!user) throw new Error('User does not exist');
 			await Promise.all(
 				(user.files as File[])?.map(async (file: File) => {
 					unlinkSync(normalize(file.path as string));
