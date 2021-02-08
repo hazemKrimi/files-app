@@ -3,7 +3,8 @@ import cors from 'cors';
 import { ApolloServer } from 'apollo-server-express';
 import { connect } from 'mongoose';
 import { AuthChecker, buildSchema } from 'type-graphql';
-import { UserResolver } from './resolvers/User';
+import { UserResolver } from './resolvers/user';
+import { FileResolver } from './resolvers/file';
 import { AuthContext } from './types/auth';
 import { auth } from './middleware/auth';
 
@@ -17,7 +18,7 @@ import { auth } from './middleware/auth';
 		};
 		const server = new ApolloServer({
 			schema: await buildSchema({
-				resolvers: [UserResolver],
+				resolvers: [UserResolver, FileResolver],
 				authChecker,
 				validate: true
 			}),
@@ -34,7 +35,8 @@ import { auth } from './middleware/auth';
 		app.use(auth);
 		await connect('mongodb://localhost:27017/files-app', {
 			useNewUrlParser: true,
-			useUnifiedTopology: true
+			useUnifiedTopology: true,
+			useFindAndModify: false
 		});
 		console.log('MongoDB connected');
 		server.applyMiddleware({ app });
