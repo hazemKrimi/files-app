@@ -2,8 +2,11 @@ import { sign } from 'jsonwebtoken';
 import { genSalt, hash, compare } from 'bcrypt';
 import { Resolver, Mutation, Args, Query, Ctx, Authorized } from 'type-graphql';
 import { User, UserModel } from '../models/User';
+import { File, FileModel } from '../models/File';
 import { UserData, SignupArgs, LoginArgs } from '../types/user';
 import { AuthContext } from '../types/auth';
+import { unlinkSync } from 'fs';
+import { normalize } from 'path';
 
 @Resolver()
 export class UserResolver {
@@ -18,9 +21,9 @@ export class UserResolver {
 
 	@Authorized()
 	@Query(() => User, { nullable: true })
-	async me(@Ctx() { user }: AuthContext): Promise<User> {
+	async me(@Ctx() { user: { id } }: AuthContext): Promise<User> {
 		try {
-			return (await UserModel.findOne({ _id: user.id })) as User;
+			return (await UserModel.findOne({ _id: id })) as User;
 		} catch (err) {
 			throw err.message;
 		}
@@ -51,6 +54,24 @@ export class UserResolver {
 			if (!match) throw new Error('Incorrect password');
 			const token = sign({ id: user.id }, 'SECRET');
 			return { user, token };
+		} catch (err) {
+			throw err.message;
+		}
+	}
+
+	@Authorized()
+	@Query(() => User, { nullable: true })
+	async deleteAccount(@Ctx() { user: { id } }: AuthContext): Promise<User> {
+		try {
+			const user = (await UserModel.findOne({ _id: id })) as User;
+			await Promise.all(
+				(user.files as File[])?.map(async (file: File) => {
+					unlinkSync(normalize(file.path as string));
+					await FileModel.deleteOne(file);
+				})
+			);
+			await UserModel.deleteOne(user);
+			return user;
 		} catch (err) {
 			throw err.message;
 		}
